@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam Scanner Pro - Digitizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Icone Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; }
+        .card { background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        .btn-active:active { transform: scale(0.98); }
+        .hidden { display: none; }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Custom scrollbar for table */
+        .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="pb-20 text-slate-800 bg-slate-50">
+
+    <!-- Navbar -->
+    <nav class="bg-white sticky top-0 z-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center shadow-sm">
+        <div class="flex items-center gap-3">
+            <div class="bg-blue-600 p-2 rounded-lg text-white">
+                <i data-lucide="scan-text" width="20"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg leading-tight text-slate-900">Exam Digitizer</h1>
+                <p class="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Estrazione Dati</p>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="document.getElementById('csvInput').click()" class="flex items-center gap-2 bg-white text-slate-600 border border-slate-200 px-3 py-2 rounded-lg font-medium text-sm hover:bg-slate-50 transition-colors btn-active">
+                <i data-lucide="upload" width="16"></i>
+                <span class="hidden sm:inline">Importa CSV</span>
+            </button>
+            <button onclick="exportCSV()" id="btnExport" disabled class="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-lg font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-800 transition-colors btn-active">
+                <i data-lucide="download" width="16"></i>
+                <span class="hidden sm:inline">Esporta</span>
+            </button>
+        </div>
+    </nav>
+
+    <main class="max-w-[98%] mx-auto p-4 space-y-4">
+        
+        <!-- Dashboard View -->
+        <div id="view-dashboard" class="space-y-4 fade-in">
+            <!-- Action Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-4xl mx-auto">
+                <!-- Scansione -->
+                <button onclick="document.getElementById('fileInput').click()" class="card p-4 flex flex-col items-center justify-center gap-2 hover:border-blue-400 active:bg-blue-50 transition-all btn-active group cursor-pointer border-dashed border-2 h-full">
+                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center group-hover:bg-blue-100 transition-colors">
+                        <i data-lucide="camera" width="24"></i>
+                    </div>
+                    <div class="text-center">
+                        <span class="block font-bold text-base text-slate-700">Nuova Scansione</span>
+                        <span class="text-[10px] text-slate-400 font-medium uppercase">Carica foto</span>
+                    </div>
+                </button>
+                
+                <!-- Pulsanti Rapidi -->
+                <button onclick="openQuickAdd('absent')" class="card p-4 flex flex-col items-center justify-center gap-2 hover:bg-orange-50 hover:border-orange-200 transition-colors btn-active h-full">
+                    <div class="w-12 h-12 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center">
+                        <i data-lucide="user-x" width="24"></i>
+                    </div>
+                    <div class="text-center">
+                        <span class="block font-bold text-base text-slate-700">Inserisci Assente</span>
+                        <span class="text-[10px] text-slate-400 font-medium uppercase">Manuale</span>
+                    </div>
+                </button>
+
+                <button onclick="openQuickAdd('withdrawn')" class="card p-4 flex flex-col items-center justify-center gap-2 hover:bg-purple-50 hover:border-purple-200 transition-colors btn-active h-full">
+                    <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center">
+                        <i data-lucide="log-out" width="24"></i>
+                    </div>
+                    <div class="text-center">
+                        <span class="block font-bold text-base text-slate-700">Inserisci Ritirato</span>
+                        <span class="text-[10px] text-slate-400 font-medium uppercase">Manuale</span>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Stats Bar -->
+            <div class="max-w-4xl mx-auto flex justify-between items-center px-2">
+                 <span id="studentCount" class="font-bold text-slate-700 text-sm">0 Record</span>
+            </div>
+
+            <input type="file" id="fileInput" multiple accept="image/*" class="hidden" onchange="handleFiles(this.files)">
+            <input type="file" id="csvInput" accept=".csv" class="hidden" onchange="handleCSV(this.files)">
+
+            <!-- Status & Progress -->
+            <div id="statusBar" class="hidden bg-blue-600 text-white p-4 rounded-xl flex items-center justify-between shadow-lg shadow-blue-200 max-w-2xl mx-auto">
+                <div class="flex items-center gap-3">
+                    <i data-lucide="loader-2" class="animate-spin" width="20"></i>
+                    <span id="statusText" class="font-bold text-sm">Lettura in corso...</span>
+                </div>
+                <div id="progressCounter" class="text-xs font-mono opacity-80">0/0</div>
+            </div>
+
+            <!-- Main Table Card -->
+            <div class="card overflow-hidden mt-2">
+                <div class="px-4 py-3 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+                    <h3 class="font-bold text-xs uppercase tracking-wider text-gray-500">Dati Estratti</h3>
+                    <button onclick="clearAll()" class="text-[10px] font-bold text-rose-500 hover:text-rose-700 uppercase tracking-tighter hover:underline">Svuota tutto</button>
+                </div>
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-left text-sm whitespace-nowrap">
+                        <thead>
+                            <tr id="tableHeaderRow" class="bg-white border-b border-gray-200 text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                                <th class="px-4 py-3 w-12 text-center bg-gray-50">Seq</th>
+                                <th class="px-4 py-3 min-w-[180px]">Studente</th>
+                                <th class="px-4 py-3 text-center">Matr.</th>
+                                <!-- Dynamic Headers injected here -->
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody" class="divide-y divide-gray-100">
+                            <tr>
+                                <td colspan="20" class="py-20 text-center text-gray-400">
+                                    <div class="flex flex-col items-center gap-3">
+                                        <div class="bg-gray-50 p-4 rounded-full">
+                                            <i data-lucide="file-spreadsheet" width="32" class="opacity-30"></i>
+                                        </div>
+                                        <p class="italic font-medium text-sm">Nessun dato. Carica immagini o importa CSV.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modal Messaggi (Toast) -->
+    <div id="messageBox" class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] hidden animate-bounce">
+        <div class="bg-slate-800 text-white px-6 py-3 rounded-full shadow-2xl text-sm font-medium flex items-center gap-2">
+            <i data-lucide="info" width="16" class="text-blue-400"></i>
+            <span id="messageText">Messaggio</span>
+        </div>
+    </div>
+
+    <!-- Modal Conferma Eliminazione -->
+    <div id="deleteModal" class="fixed inset-0 bg-black/50 z-[70] hidden flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 text-center space-y-4">
+            <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto">
+                <i data-lucide="alert-triangle" width="24"></i>
+            </div>
+            <div>
+                <h3 id="modalTitle" class="font-bold text-lg text-slate-800">Eliminare studente?</h3>
+                <p id="modalMessage" class="text-sm text-gray-500">Questa azione non può essere annullata.</p>
+            </div>
+            <div class="flex gap-2 justify-center pt-2">
+                <button onclick="closeDeleteModal()" class="px-4 py-2 text-gray-500 font-bold hover:bg-gray-50 rounded-lg">Annulla</button>
+                <button onclick="executeDelete()" class="px-4 py-2 bg-rose-600 text-white font-bold rounded-lg hover:bg-rose-700 shadow-md">Elimina</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Inserimento Rapido (Assenti/Ritirati) -->
+    <div id="quickAddModal" class="fixed inset-0 bg-black/50 z-[60] hidden flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col">
+            <div class="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                <h3 id="quickAddTitle" class="font-bold text-lg text-slate-800">Inserimento Manuale</h3>
+                <button onclick="closeQuickAdd()" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" width="20"></i></button>
+            </div>
+            <div class="p-6 space-y-4">
+                <input type="hidden" id="quickAddType">
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Numero Sequenza (Obbligatorio)</label>
+                    <input type="number" id="quickSeq" class="w-full border-2 border-slate-200 rounded-lg p-3 font-mono text-lg font-bold text-center focus:border-blue-500 outline-none" placeholder="Es. 10" onkeydown="if(event.key === 'Enter') document.getElementById('quickName').focus()">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Nome (Opzionale)</label>
+                    <input type="text" id="quickName" class="w-full border border-slate-200 rounded-lg p-2" placeholder="Cognome Nome" onkeydown="if(event.key === 'Enter') saveQuickAdd(true)">
+                </div>
+            </div>
+            <div class="p-4 border-t border-gray-100 flex flex-col sm:flex-row justify-end gap-2 bg-gray-50">
+                <button onclick="saveQuickAdd(true)" class="px-4 py-2 bg-indigo-50 text-indigo-700 font-bold rounded-lg hover:bg-indigo-100 transition-colors w-full sm:w-auto">
+                    Salva e Nuovo
+                </button>
+                <div class="flex gap-2 w-full sm:w-auto">
+                    <button onclick="closeQuickAdd()" class="px-4 py-2 text-gray-500 font-bold hover:bg-gray-100 rounded-lg flex-1 sm:flex-none">Annulla</button>
+                    <button onclick="saveQuickAdd(false)" class="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 shadow-md flex-1 sm:flex-none">Salva</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Modifica Studente -->
+    <div id="editModal" class="fixed inset-0 bg-black/50 z-[60] hidden flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                <h3 class="font-bold text-lg text-slate-800">Modifica Dati</h3>
+                <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" width="20"></i></button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto custom-scrollbar space-y-4">
+                <input type="hidden" id="editId">
+                
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div class="col-span-1">
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Seq</label>
+                        <input type="number" id="editSeq" class="w-full border rounded-lg p-2 font-mono">
+                    </div>
+                    <div class="col-span-1">
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Matricola</label>
+                        <input type="text" id="editMatricola" class="w-full border rounded-lg p-2 font-mono">
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Nome Studente</label>
+                        <input type="text" id="editNome" class="w-full border rounded-lg p-2">
+                    </div>
+                </div>
+
+                <div class="p-4 bg-slate-50 rounded-lg border border-slate-100">
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2 text-center">Risposte</label>
+                    <div class="grid grid-cols-7 gap-2" id="editAnswersGrid">
+                        <!-- Inputs generati via JS -->
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Tentativo</label>
+                        <input type="number" id="editTentativo" class="w-full border rounded-lg p-2">
+                    </div>
+                    <div class="space-y-2 pt-2">
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" id="editAntic" class="w-4 h-4 text-purple-600 rounded">
+                            <label for="editAntic" class="text-sm font-medium text-slate-700">Consegna Anticipata</label>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" id="editRitirato" class="w-4 h-4 text-rose-600 rounded">
+                            <label for="editRitirato" class="text-sm font-medium text-slate-700">Ritirato (RIT=1)</label>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" id="editPresente" class="w-4 h-4 text-emerald-600 rounded">
+                            <label for="editPresente" class="text-sm font-medium text-slate-700">Presente (Pres=1)</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-gray-100 flex justify-end gap-2 bg-gray-50">
+                <button onclick="closeEditModal()" class="px-4 py-2 text-gray-500 font-bold hover:bg-gray-100 rounded-lg">Annulla</button>
+                <button onclick="saveStudent()" class="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 shadow-md">Salva Modifiche</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGICA APP -->
+    <script>
+        // --- CONFIGURAZIONE ---
+        // IMPORTANTE: Se usi questo file fuori da Canvas (es. GitHub), inserisci la tua API Key qui sotto:
+        const apiKey = ""; 
+        const MODEL_NAME = "gemini-2.5-flash-preview-09-2025";
+        
+        // Stato Applicazione
+        // Student structure: { ..., presente: 1/0, ritirato: 1/0 }
+        let students = [];
+        let isProcessing = false;
+        let pendingDeleteAction = null;
+
+        // Inizializzazione
+        window.onload = () => {
+            lucide.createIcons();
+            renderTableHeaders();
+        };
+
+        function renderTableHeaders() {
+            const headerRow = document.getElementById('tableHeaderRow');
+            
+            // Pulisce tutto dopo Matricola (indice 2)
+            while (headerRow.children.length > 3) {
+                headerRow.removeChild(headerRow.lastChild);
+            }
+
+            // 1. Inserisce Risposte D1-D13
+            for (let i = 1; i <= 13; i++) {
+                const th = document.createElement('th');
+                th.className = "px-1 py-3 text-center w-8 text-[9px] text-slate-400 font-mono border-l border-gray-100";
+                th.innerText = `D${i}`;
+                headerRow.appendChild(th);
+            }
+
+            // 2. Tentativo, Antic
+            const cols = ["Tent.", "Antic."];
+            cols.forEach(label => {
+                const th = document.createElement('th');
+                th.className = "px-2 py-3 text-center border-l border-gray-100 text-xs";
+                th.innerText = label;
+                headerRow.appendChild(th);
+            });
+
+            // 3. NUOVI: Pres. e RIT
+            const thPres = document.createElement('th');
+            thPres.className = "px-2 py-3 text-center border-l border-gray-100 text-xs bg-emerald-50 text-emerald-700";
+            thPres.innerText = "Pres.";
+            headerRow.appendChild(thPres);
+
+            const thRit = document.createElement('th');
+            thRit.className = "px-2 py-3 text-center border-l border-gray-100 text-xs bg-rose-50 text-rose-700";
+            thRit.innerText = "RIT";
+            headerRow.appendChild(thRit);
+
+            // 4. Inserisce Azioni (sticky right)
+            const thActions = document.createElement('th');
+            thActions.className = "px-4 py-3 w-20 sticky right-0 bg-white shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.1)]";
+            headerRow.appendChild(thActions);
+        }
+
+        // --- API GEMINI ---
+        async function fetchWithRetry(url, options, retries = 5) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.ok) return await response.json();
+                    if (response.status === 429 || response.status >= 500) {
+                        const delay = Math.pow(2, i) * 1000;
+                        await new Promise(r => setTimeout(r, delay));
+                        continue;
+                    }
+                    throw new Error(`HTTP Error: ${response.status}`);
+                } catch (err) {
+                    if (i === retries - 1) throw err;
+                    const delay = Math.pow(2, i) * 1000;
+                    await new Promise(r => setTimeout(r, delay));
+                }
+            }
+        }
+
+        async function analyzeImage(base64) {
+            const prompt = `
+                Sei un sistema di Data Entry automatico.
+                Estrai i dati dall'immagine.
+                
+                CAMPI DA ESTRARRE:
+                1. "nSeq": Numero sequenziale (sopra il nome, in alto a sx).
+                2. "nome": Nome e Cognome.
+                3. "matricola": Codice matricola.
+                4. "tentativo": Numero tentativo (es. 2).
+                5. "consegnaAnticipata": Booleano.
+                6. "risposte": Oggetto {"D1": val... "D13": val} (0 se bianca, null se illeggibile).
+                
+                Output: JSON valido.
+            `;
+
+            const payload = {
+                contents: [{
+                    parts: [
+                        { text: prompt },
+                        { inlineData: { mimeType: "image/jpeg", data: base64.split(',')[1] } }
+                    ]
+                }],
+                generationConfig: { 
+                    responseMimeType: "application/json" 
+                }
+            };
+
+            const data = await fetchWithRetry(
+                `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${apiKey}`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }
+            );
+
+            const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            return JSON.parse(resultText);
+        }
+
+        // --- GESTIONE FILE (Scansione) ---
+        async function handleFiles(files) {
+            if (!files.length || isProcessing) return;
+            
+            isProcessing = true;
+            document.getElementById('statusBar').classList.remove('hidden');
+            let processedCount = 0;
+            const total = files.length;
+            document.getElementById('progressCounter').innerText = `0/${total}`;
+
+            for (let file of files) {
+                document.getElementById('statusText').innerText = `Analisi: ${file.name}...`;
+                try {
+                    const base64 = await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.readAsDataURL(file);
+                    });
+                    
+                    const data = await analyzeImage(base64);
+                    
+                    const newEntry = { 
+                        ...data, 
+                        presente: 1,
+                        ritirato: 0,
+                        fileName: file.name,
+                        risposte: data.risposte || {}
+                    };
+
+                    upsertStudent(newEntry);
+                    
+                    processedCount++;
+                    document.getElementById('progressCounter').innerText = `${processedCount}/${total}`;
+                    updateTable();
+                    
+                } catch (err) {
+                    console.error(err);
+                    showToast(`Errore su ${file.name}`);
+                }
+            }
+            
+            isProcessing = false;
+            document.getElementById('statusBar').classList.add('hidden');
+            document.getElementById('fileInput').value = ''; 
+            showToast("Importazione completata!");
+        }
+
+        // --- GESTIONE CSV IMPORT ---
+        async function handleCSV(files) {
+            if (!files.length) return;
+            const file = files[0];
+            
+            try {
+                const text = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.readAsText(file);
+                });
+
+                const lines = text.split(/\r?\n/).filter(line => line.trim() !== "");
+                if (lines.length < 2) throw new Error("File vuoto o invalido");
+
+                // Assuming Semicolon separated from Export
+                const startIndex = 1; // Skip Header
+                
+                let count = 0;
+                for (let i = startIndex; i < lines.length; i++) {
+                    const cols = lines[i].split(';');
+                    if (cols.length < 5) continue; // Basic validation
+
+                    // Mapping based on Export structure: 
+                    // 0:N.Seq, 1:Nome, 2:Matricola, 3-15:D1-D13, 16:Tent, 17:Antic, 18:Pres, 19:Rit
+                    
+                    const risposteObj = {};
+                    for(let k=1; k<=13; k++) {
+                        const val = cols[2 + k]; // D1 starts at index 3
+                        risposteObj[`D${k}`] = (val && val !== "") ? parseInt(val) : null;
+                    }
+
+                    const nSeq = parseInt(cols[0]) || null;
+                    const nome = cols[1];
+                    const matricola = cols[2];
+                    const tentativo = parseInt(cols[16]) || null;
+                    const anticVal = cols[17]; 
+                    const presVal = cols[18];
+                    const ritVal = cols[19];
+
+                    const newEntry = {
+                        nSeq: nSeq,
+                        nome: nome,
+                        matricola: matricola,
+                        risposte: risposteObj,
+                        tentativo: tentativo,
+                        consegnaAnticipata: (anticVal === "SI"),
+                        presente: (presVal === "1") ? 1 : 0,
+                        ritirato: (ritVal === "1") ? 1 : 0,
+                        fileName: "Importato"
+                    };
+
+                    upsertStudent(newEntry);
+                    count++;
+                }
+
+                updateTable();
+                showToast(`Importati ${count} record da CSV`);
+
+            } catch(e) {
+                console.error(e);
+                showToast("Errore lettura CSV");
+            }
+            document.getElementById('csvInput').value = '';
+        }
+
+        // --- GESTIONE INSERIMENTO MANUALE (Assenti/Ritirati) ---
+        function openQuickAdd(type) {
+            document.getElementById('quickAddType').value = type;
+            document.getElementById('quickSeq').value = '';
+            document.getElementById('quickName').value = '';
+            
+            const title = type === 'absent' ? 'Inserisci Assente' : 'Inserisci Ritirato';
+            document.getElementById('quickAddTitle').innerText = title;
+            document.getElementById('quickAddModal').classList.remove('hidden');
+            document.getElementById('quickSeq').focus();
+        }
+
+        function closeQuickAdd() {
+            document.getElementById('quickAddModal').classList.add('hidden');
+        }
+
+        function saveQuickAdd(keepOpen = false) {
+            const type = document.getElementById('quickAddType').value;
+            const seq = document.getElementById('quickSeq').value;
+            const name = document.getElementById('quickName').value;
+
+            if (!seq) {
+                alert("Il numero di sequenza è obbligatorio");
+                return;
+            }
+
+            const isAbsent = type === 'absent';
+            
+            const newEntry = {
+                nSeq: parseInt(seq),
+                nome: name || (isAbsent ? "ASSENTE" : "RITIRATO"),
+                matricola: "",
+                tentativo: null,
+                consegnaAnticipata: false,
+                risposte: {}, 
+                presente: isAbsent ? 0 : 1,
+                ritirato: isAbsent ? 0 : 1,
+                fileName: "Manuale"
+            };
+
+            for(let i=1; i<=13; i++) newEntry.risposte[`D${i}`] = 0;
+
+            upsertStudent(newEntry);
+            updateTable();
+            
+            if (keepOpen) {
+                document.getElementById('quickSeq').value = '';
+                document.getElementById('quickName').value = '';
+                document.getElementById('quickSeq').focus();
+                showToast("Inserito. Avanti il prossimo!");
+            } else {
+                closeQuickAdd();
+                showToast("Studente inserito manualmente");
+            }
+        }
+
+        // --- CORE DATA LOGIC ---
+        function upsertStudent(data) {
+            let existingIndex = -1;
+            const norm = str => (str || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+            // 1. Cerca per Matricola
+            if (data.matricola && data.matricola.length > 3) {
+                 existingIndex = students.findIndex(s => norm(s.matricola) === norm(data.matricola));
+            }
+            // 2. Cerca per nSeq
+            if (existingIndex === -1 && data.nSeq) {
+                const seqMatchIdx = students.findIndex(s => String(s.nSeq) === String(data.nSeq));
+                if (seqMatchIdx !== -1) {
+                    existingIndex = seqMatchIdx;
+                }
+            }
+
+            const finalData = {
+                ...data,
+                id: existingIndex !== -1 ? students[existingIndex].id : (Date.now() + Math.random())
+            };
+
+            if (existingIndex !== -1) {
+                students[existingIndex] = finalData;
+            } else {
+                students.push(finalData);
+            }
+
+            students.sort((a, b) => (parseInt(a.nSeq) || 9999) - (parseInt(b.nSeq) || 9999));
+        }
+
+        // --- UI UPDATES & MODALE ---
+        function updateTable() {
+            const tbody = document.getElementById('tableBody');
+            document.getElementById('studentCount').innerText = `${students.length} Record`;
+            document.getElementById('btnExport').disabled = students.length === 0;
+
+            if (students.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="25" class="py-20 text-center text-gray-400 italic">Nessun dato</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = students.map(s => {
+                // Style row based on status
+                let rowBg = "bg-white";
+                let nameColor = "text-slate-800";
+                
+                if (s.presente === 0) {
+                    rowBg = "bg-orange-50/50";
+                    nameColor = "text-orange-800 italic";
+                } else if (s.ritirato === 1) {
+                    rowBg = "bg-purple-50/50";
+                    nameColor = "text-purple-800";
+                }
+
+                let answerCells = '';
+                for(let i=1; i<=13; i++) {
+                    const val = s.risposte[`D${i}`];
+                    let displayVal;
+                    let colorClass = "";
+                    
+                    if (s.presente === 0 || s.ritirato === 1) {
+                         displayVal = '<span class="text-gray-200">-</span>';
+                    } else if (val === 0) {
+                        displayVal = '<span class="text-gray-400 font-mono">0</span>';
+                    } else if (val > 0) {
+                        displayVal = val;
+                        colorClass = 'font-bold text-slate-700 bg-slate-50';
+                    } else {
+                        displayVal = '<span class="text-gray-200">·</span>';
+                    }
+                    answerCells += `<td class="px-1 py-3 text-center border-l border-gray-50 text-xs ${colorClass}">${displayVal}</td>`;
+                }
+
+                const anticText = s.consegnaAnticipata 
+                    ? `<span class="font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded text-[10px]">SI</span>` 
+                    : `<span class="font-mono text-slate-300 text-xs">0</span>`;
+
+                const presText = s.presente === 1 
+                    ? `<span class="font-bold text-emerald-600">1</span>` 
+                    : `<span class="font-bold text-orange-400">0</span>`;
+                
+                const ritText = s.ritirato === 1 
+                    ? `<span class="font-bold text-rose-600">1</span>` 
+                    : `<span class="font-bold text-slate-300">0</span>`;
+
+                return `
+                <tr class="border-b border-gray-50 hover:brightness-95 transition-all group ${rowBg}">
+                    <td class="px-4 py-3 font-mono text-slate-500 text-center text-xs bg-black/5">${s.nSeq || '?'}</td>
+                    
+                    <td class="px-4 py-3">
+                        <div class="font-bold text-sm ${nameColor}">${s.nome || (s.presente === 0 ? 'ASSENTE' : 'Illeggibile')}</div>
+                        <div class="text-[10px] text-gray-400 truncate max-w-[150px]">${s.fileName || ''}</div>
+                    </td>
+                    
+                    <td class="px-4 py-3 text-center font-mono text-xs text-blue-600 font-medium">
+                        ${s.matricola || '<span class="text-gray-300">-</span>'}
+                    </td>
+                    
+                    ${answerCells}
+
+                    <td class="px-4 py-3 text-center font-mono text-xs border-l border-gray-50">
+                        ${s.tentativo ? `<span class="bg-gray-100 px-2 py-1 rounded text-gray-700 font-bold">${s.tentativo}</span>` : '-'}
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        ${anticText}
+                    </td>
+
+                    <!-- PRESENTE Column -->
+                    <td class="px-4 py-3 text-center border-l border-emerald-50 bg-emerald-50/30">
+                        ${presText}
+                    </td>
+                    <!-- RITIRATO Column -->
+                    <td class="px-4 py-3 text-center border-l border-rose-50 bg-rose-50/30">
+                        ${ritText}
+                    </td>
+                    
+                    <td class="px-2 py-3 text-center sticky right-0 ${rowBg} shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.05)]">
+                        <div class="flex items-center justify-center gap-1">
+                            <button onclick="editStudent(${s.id})" class="text-gray-400 hover:text-blue-500 p-1.5 rounded-lg hover:bg-blue-50 transition-all">
+                                <i data-lucide="pencil" width="16"></i>
+                            </button>
+                            <button onclick="removeStudent(${s.id})" class="text-gray-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition-all">
+                                <i data-lucide="trash-2" width="16"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                `;
+            }).join('');
+            
+            lucide.createIcons();
+        }
+
+        // --- EDIT MODAL ---
+        function editStudent(id) {
+            const student = students.find(s => s.id === id);
+            if (!student) return;
+
+            document.getElementById('editId').value = student.id;
+            document.getElementById('editSeq').value = student.nSeq || '';
+            document.getElementById('editNome').value = student.nome || '';
+            document.getElementById('editMatricola').value = student.matricola || '';
+            document.getElementById('editTentativo').value = student.tentativo || '';
+            
+            document.getElementById('editAntic').checked = !!student.consegnaAnticipata;
+            document.getElementById('editPresente').checked = student.presente === 1;
+            document.getElementById('editRitirato').checked = student.ritirato === 1;
+
+            const answersGrid = document.getElementById('editAnswersGrid');
+            answersGrid.innerHTML = '';
+            for (let i = 1; i <= 13; i++) {
+                const val = student.risposte[`D${i}`];
+                const displayVal = (val === null || val === undefined) ? '' : val;
+                
+                const div = document.createElement('div');
+                div.innerHTML = `
+                    <label class="block text-[10px] text-gray-400 text-center font-mono">D${i}</label>
+                    <input type="number" min="0" max="6" value="${displayVal}" id="edit_D${i}"
+                        class="w-full text-center border rounded p-1 font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none">
+                `;
+                answersGrid.appendChild(div);
+            }
+
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.add('hidden');
+        }
+
+        function saveStudent() {
+            const id = parseFloat(document.getElementById('editId').value);
+            const idx = students.findIndex(s => s.id === id);
+            if (idx === -1) return;
+
+            const updatedAnswers = {};
+            for (let i = 1; i <= 13; i++) {
+                const val = document.getElementById(`edit_D${i}`).value;
+                updatedAnswers[`D${i}`] = val === '' ? null : parseInt(val);
+            }
+
+            students[idx] = {
+                ...students[idx],
+                nSeq: document.getElementById('editSeq').value,
+                nome: document.getElementById('editNome').value,
+                matricola: document.getElementById('editMatricola').value,
+                tentativo: document.getElementById('editTentativo').value ? parseInt(document.getElementById('editTentativo').value) : null,
+                consegnaAnticipata: document.getElementById('editAntic').checked,
+                presente: document.getElementById('editPresente').checked ? 1 : 0,
+                ritirato: document.getElementById('editRitirato').checked ? 1 : 0,
+                risposte: updatedAnswers
+            };
+
+            students.sort((a, b) => (parseInt(a.nSeq) || 9999) - (parseInt(b.nSeq) || 9999));
+            updateTable();
+            closeEditModal();
+            showToast("Modifiche salvate");
+        }
+
+        // --- UTILS (Delete, Toast, Export) ---
+        function showConfirmModal(action, title, message) {
+            pendingDeleteAction = action;
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalMessage').innerText = message;
+            document.getElementById('deleteModal').classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeDeleteModal() {
+            pendingDeleteAction = null;
+            document.getElementById('deleteModal').classList.add('hidden');
+        }
+
+        function executeDelete() {
+            if (pendingDeleteAction) pendingDeleteAction();
+            closeDeleteModal();
+        }
+
+        function removeStudent(id) {
+            showConfirmModal(
+                () => {
+                    students = students.filter(s => s.id !== id);
+                    updateTable();
+                    showToast("Studente eliminato");
+                },
+                "Eliminare record?",
+                "Sei sicuro di voler rimuovere questo record dalla lista?"
+            );
+        }
+
+        function clearAll() {
+            if (students.length === 0) return;
+            showConfirmModal(
+                () => {
+                    students = [];
+                    updateTable();
+                    showToast("Tutti i dati cancellati");
+                },
+                "Svuotare tutto?",
+                "Tutti i dati acquisiti verranno persi irrimediabilmente."
+            );
+        }
+
+        function showToast(text) {
+            const box = document.getElementById('messageBox');
+            const msg = document.getElementById('messageText');
+            msg.innerText = text;
+            box.classList.remove('hidden');
+            setTimeout(() => box.classList.add('hidden'), 3000);
+        }
+
+        function exportCSV() {
+            if (students.length === 0) return;
+
+            // Header CSV: Seq, Nome, Matr, D1-D13, Tent, Antic, Pres, RIT
+            const header = [
+                "N.Seq", "Nome", "Matricola", 
+                ...Array.from({length:13},(_,i)=>`D${i+1}`), 
+                "Tentativo", "Consegna Anticipata", "Presente", "Ritirato"
+            ].join(";");
+            
+            const rows = students.map(s => [
+                s.nSeq || "",
+                s.nome || "Sconosciuto",
+                s.matricola || "",
+                ...Array.from({length:13},(_,i)=> {
+                    const r = s.risposte[`D${i+1}`];
+                    if (r === 0) return "0";
+                    return (r === null || r === undefined) ? "" : r;
+                }),
+                s.tentativo || "",
+                s.consegnaAnticipata ? "SI" : "0",
+                s.presente, // 1 o 0
+                s.ritirato  // 1 o 0
+            ].join(";"));
+            
+            const csvContent = "\uFEFF" + [header, ...rows].join("\n");
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `Dati_Esame_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast("File CSV generato!");
+        }
+    </script>
+</body>
+</html>
