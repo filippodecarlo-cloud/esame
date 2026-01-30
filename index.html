@@ -56,31 +56,17 @@
         <!-- Dashboard View -->
         <div id="view-dashboard" class="space-y-4 fade-in">
             <!-- Action Cards -->
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 max-w-5xl mx-auto">
-                
-                <!-- 1. Fotocamera (Diretta) -->
-                <button onclick="document.getElementById('cameraInput').click()" class="card p-4 flex flex-col items-center justify-center gap-2 hover:border-blue-400 active:bg-blue-50 transition-all btn-active group cursor-pointer border-dashed border-2 h-full">
-                    <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-4xl mx-auto">
+                <button onclick="document.getElementById('fileInput').click()" class="card p-4 flex flex-col items-center justify-center gap-2 hover:border-blue-400 active:bg-blue-50 transition-all btn-active group cursor-pointer border-dashed border-2 h-full">
+                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center group-hover:bg-blue-100 transition-colors">
                         <i data-lucide="camera" width="24"></i>
                     </div>
                     <div class="text-center">
-                        <span class="block font-bold text-base text-slate-700">Fotocamera</span>
-                        <span class="text-[10px] text-slate-400 font-medium uppercase">Scatta ora</span>
-                    </div>
-                </button>
-
-                <!-- 2. Galleria (Multipla) -->
-                <button onclick="document.getElementById('fileInput').click()" class="card p-4 flex flex-col items-center justify-center gap-2 hover:border-indigo-400 active:bg-indigo-50 transition-all btn-active group cursor-pointer border-dashed border-2 h-full">
-                    <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center group-hover:bg-indigo-100 transition-colors">
-                        <i data-lucide="images" width="24"></i>
-                    </div>
-                    <div class="text-center">
-                        <span class="block font-bold text-base text-slate-700">Galleria</span>
-                        <span class="text-[10px] text-slate-400 font-medium uppercase">Carica file</span>
+                        <span class="block font-bold text-base text-slate-700">Nuova Scansione</span>
+                        <span class="text-[10px] text-slate-400 font-medium uppercase">Carica foto</span>
                     </div>
                 </button>
                 
-                <!-- 3. Assente -->
                 <button onclick="openQuickAdd('absent')" class="card p-4 flex flex-col items-center justify-center gap-2 hover:bg-orange-50 hover:border-orange-200 transition-colors btn-active h-full">
                     <div class="w-12 h-12 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center">
                         <i data-lucide="user-x" width="24"></i>
@@ -91,7 +77,6 @@
                     </div>
                 </button>
 
-                <!-- 4. Ritirato -->
                 <button onclick="openQuickAdd('withdrawn')" class="card p-4 flex flex-col items-center justify-center gap-2 hover:bg-purple-50 hover:border-purple-200 transition-colors btn-active h-full">
                     <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center">
                         <i data-lucide="log-out" width="24"></i>
@@ -104,13 +89,11 @@
             </div>
 
             <!-- Stats Bar -->
-            <div class="max-w-5xl mx-auto flex justify-between items-center px-2">
+            <div class="max-w-4xl mx-auto flex justify-between items-center px-2">
                  <span id="studentCount" class="font-bold text-slate-700 text-sm">0 Record</span>
             </div>
 
-            <!-- Inputs Nascosti -->
             <input type="file" id="fileInput" multiple accept="image/*" class="hidden" onchange="handleFiles(this.files)">
-            <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden" onchange="handleFiles(this.files)">
             <input type="file" id="csvInput" accept=".csv" class="hidden" onchange="handleCSV(this.files)">
 
             <!-- Status & Progress -->
@@ -458,7 +441,6 @@
             isProcessing = false;
             document.getElementById('statusBar').classList.add('hidden');
             document.getElementById('fileInput').value = ''; 
-            document.getElementById('cameraInput').value = ''; 
             showToast("Importazione completata!");
         }
 
@@ -489,7 +471,7 @@
                         matricola: cols[2],
                         risposte: risposteObj,
                         tentativo: parseInt(cols[16]) || null,
-                        consegnaAnticipata: (cols[17] === "SI" || cols[17] === "1"),
+                        consegnaAnticipata: (cols[17] === "SI"),
                         presente: (cols[18] === "1") ? 1 : 0,
                         ritirato: (cols[19] === "1") ? 1 : 0,
                         fileName: "Importato"
@@ -596,7 +578,7 @@
                     <td class="px-4 py-3 text-center font-mono text-xs text-blue-600 font-medium">${s.matricola || '<span class="text-gray-300">-</span>'}</td>
                     ${answerCells}
                     <td class="px-4 py-3 text-center font-mono text-xs border-l border-gray-50">${s.tentativo ? `<span class="bg-gray-100 px-2 py-1 rounded text-gray-700 font-bold">${s.tentativo}</span>` : '-'}</td>
-                    <td class="px-4 py-3 text-center">${s.consegnaAnticipata ? `<span class="font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded text-[10px]">1</span>` : `<span class="font-mono text-slate-300 text-xs">0</span>`}</td>
+                    <td class="px-4 py-3 text-center">${s.consegnaAnticipata ? `<span class="font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded text-[10px]">SI</span>` : `<span class="font-mono text-slate-300 text-xs">0</span>`}</td>
                     <td class="px-4 py-3 text-center border-l border-emerald-50 bg-emerald-50/30">${s.presente === 1 ? `<span class="font-bold text-emerald-600">1</span>` : `<span class="font-bold text-orange-400">0</span>`}</td>
                     <td class="px-4 py-3 text-center border-l border-rose-50 bg-rose-50/30">${s.ritirato === 1 ? `<span class="font-bold text-rose-600">1</span>` : `<span class="font-bold text-slate-300">0</span>`}</td>
                     <td class="px-2 py-3 text-center sticky right-0 ${rowBg} shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.05)]">
@@ -676,7 +658,7 @@
             const rows = students.map(s => [
                 s.nSeq || "", s.nome || "", s.matricola || "",
                 ...Array.from({length:13},(_,i)=> (s.risposte[`D${i+1}`] === 0 ? "0" : (s.risposte[`D${i+1}`] || ""))),
-                s.tentativo || "", s.consegnaAnticipata ? "1" : "0", s.presente, s.ritirato
+                s.tentativo || "", s.consegnaAnticipata ? "SI" : "0", s.presente, s.ritirato
             ].join(";"));
             const blob = new Blob(["\uFEFF" + [header, ...rows].join("\n")], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
