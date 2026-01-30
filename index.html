@@ -4,8 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Exam Scanner Pro - Digitizer</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 7V5a2 2 0 0 1 2-2h2'/%3E%3Cpath d='M17 3h2a2 2 0 0 1 2 2v2'/%3E%3Cpath d='M21 17v2a2 2 0 0 1-2 2h-2'/%3E%3Cpath d='M7 21H5a2 2 0 0 1-2-2v-2'/%3E%3Crect x='7' y='7' width='10' height='10' rx='1'/%3E%3C/svg%3E">
+
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Icone Lucide -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; }
@@ -14,8 +17,6 @@
         .hidden { display: none; }
         .fade-in { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* Custom scrollbar for table */
         .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -36,6 +37,9 @@
             </div>
         </div>
         <div class="flex gap-2">
+             <button onclick="resetApiKey()" class="flex items-center gap-2 text-slate-400 hover:text-blue-600 px-2 transition-colors" title="Cambia API Key">
+                <i data-lucide="key" width="16"></i>
+            </button>
             <button onclick="document.getElementById('csvInput').click()" class="flex items-center gap-2 bg-white text-slate-600 border border-slate-200 px-3 py-2 rounded-lg font-medium text-sm hover:bg-slate-50 transition-colors btn-active">
                 <i data-lucide="upload" width="16"></i>
                 <span class="hidden sm:inline">Importa CSV</span>
@@ -53,7 +57,6 @@
         <div id="view-dashboard" class="space-y-4 fade-in">
             <!-- Action Cards -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-4xl mx-auto">
-                <!-- Scansione -->
                 <button onclick="document.getElementById('fileInput').click()" class="card p-4 flex flex-col items-center justify-center gap-2 hover:border-blue-400 active:bg-blue-50 transition-all btn-active group cursor-pointer border-dashed border-2 h-full">
                     <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center group-hover:bg-blue-100 transition-colors">
                         <i data-lucide="camera" width="24"></i>
@@ -64,7 +67,6 @@
                     </div>
                 </button>
                 
-                <!-- Pulsanti Rapidi -->
                 <button onclick="openQuickAdd('absent')" class="card p-4 flex flex-col items-center justify-center gap-2 hover:bg-orange-50 hover:border-orange-200 transition-colors btn-active h-full">
                     <div class="w-12 h-12 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center">
                         <i data-lucide="user-x" width="24"></i>
@@ -146,6 +148,27 @@
         </div>
     </div>
 
+    <!-- Modal Richiesta API Key -->
+    <div id="apiKeyModal" class="fixed inset-0 bg-slate-900/90 z-[80] hidden flex items-center justify-center backdrop-blur-sm p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-8 text-center space-y-4">
+            <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="key" width="32"></i>
+            </div>
+            <h2 class="font-bold text-2xl text-slate-800">Configurazione Iniziale</h2>
+            <p class="text-gray-500 text-sm">
+                Per usare l'app, inserisci la tua Google Gemini API Key.
+                <br>Verrà salvata solo nel tuo browser.
+            </p>
+            <input type="password" id="inputApiKey" placeholder="Incolla qui la tua API Key (AIza...)" class="w-full border-2 border-slate-200 rounded-lg p-3 text-center focus:border-blue-500 outline-none">
+            <button onclick="saveApiKey()" class="w-full py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 shadow-md transition-all">
+                Salva e Inizia
+            </button>
+            <p class="text-[10px] text-gray-400 mt-4">
+                Non hai una chiave? <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-blue-500 underline">Generala gratis qui</a>.
+            </p>
+        </div>
+    </div>
+
     <!-- Modal Conferma Eliminazione -->
     <div id="deleteModal" class="fixed inset-0 bg-black/50 z-[70] hidden flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 text-center space-y-4">
@@ -163,7 +186,7 @@
         </div>
     </div>
 
-    <!-- Modal Inserimento Rapido (Assenti/Ritirati) -->
+    <!-- Modal Inserimento Rapido -->
     <div id="quickAddModal" class="fixed inset-0 bg-black/50 z-[60] hidden flex items-center justify-center backdrop-blur-sm p-4">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col">
             <div class="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
@@ -173,7 +196,7 @@
             <div class="p-6 space-y-4">
                 <input type="hidden" id="quickAddType">
                 <div>
-                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Numero Sequenza (Obbligatorio)</label>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Numero Sequenza</label>
                     <input type="number" id="quickSeq" class="w-full border-2 border-slate-200 rounded-lg p-3 font-mono text-lg font-bold text-center focus:border-blue-500 outline-none" placeholder="Es. 10" onkeydown="if(event.key === 'Enter') document.getElementById('quickName').focus()">
                 </div>
                 <div>
@@ -203,7 +226,6 @@
             
             <div class="p-6 overflow-y-auto custom-scrollbar space-y-4">
                 <input type="hidden" id="editId">
-                
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     <div class="col-span-1">
                         <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Seq</label>
@@ -218,14 +240,10 @@
                         <input type="text" id="editNome" class="w-full border rounded-lg p-2">
                     </div>
                 </div>
-
                 <div class="p-4 bg-slate-50 rounded-lg border border-slate-100">
                     <label class="block text-xs font-bold text-gray-400 uppercase mb-2 text-center">Risposte</label>
-                    <div class="grid grid-cols-7 gap-2" id="editAnswersGrid">
-                        <!-- Inputs generati via JS -->
-                    </div>
+                    <div class="grid grid-cols-7 gap-2" id="editAnswersGrid"></div>
                 </div>
-
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Tentativo</label>
@@ -247,7 +265,6 @@
                     </div>
                 </div>
             </div>
-
             <div class="p-4 border-t border-gray-100 flex justify-end gap-2 bg-gray-50">
                 <button onclick="closeEditModal()" class="px-4 py-2 text-gray-500 font-bold hover:bg-gray-100 rounded-lg">Annulla</button>
                 <button onclick="saveStudent()" class="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 shadow-md">Salva Modifiche</button>
@@ -258,12 +275,10 @@
     <!-- LOGICA APP -->
     <script>
         // --- CONFIGURAZIONE ---
-        // IMPORTANTE: Se usi questo file fuori da Canvas (es. GitHub), inserisci la tua API Key qui sotto:
-        const apiKey = "AIzaSyBsjDvyF74LX7SNwZM9EnBmjObNAmQhI74"; 
+        // NESSUNA API KEY QUI! Viene gestita via LocalStorage
+        let apiKey = localStorage.getItem('gemini_api_key') || "";
         const MODEL_NAME = "gemini-2.5-flash-preview-09-2025";
         
-        // Stato Applicazione
-        // Student structure: { ..., presente: 1/0, ritirato: 1/0 }
         let students = [];
         let isProcessing = false;
         let pendingDeleteAction = null;
@@ -272,17 +287,39 @@
         window.onload = () => {
             lucide.createIcons();
             renderTableHeaders();
+            checkApiKey();
         };
+
+        // --- GESTIONE API KEY SICURA ---
+        function checkApiKey() {
+            if (!apiKey) {
+                document.getElementById('apiKeyModal').classList.remove('hidden');
+            }
+        }
+
+        function saveApiKey() {
+            const input = document.getElementById('inputApiKey').value.trim();
+            if (input.length < 10) {
+                alert("Inserisci una chiave valida");
+                return;
+            }
+            apiKey = input;
+            localStorage.setItem('gemini_api_key', apiKey);
+            document.getElementById('apiKeyModal').classList.add('hidden');
+            showToast("Chiave salvata con successo!");
+        }
+
+        function resetApiKey() {
+            if(confirm("Vuoi cambiare la tua API Key?")) {
+                localStorage.removeItem('gemini_api_key');
+                location.reload();
+            }
+        }
 
         function renderTableHeaders() {
             const headerRow = document.getElementById('tableHeaderRow');
-            
-            // Pulisce tutto dopo Matricola (indice 2)
-            while (headerRow.children.length > 3) {
-                headerRow.removeChild(headerRow.lastChild);
-            }
+            while (headerRow.children.length > 3) headerRow.removeChild(headerRow.lastChild);
 
-            // 1. Inserisce Risposte D1-D13
             for (let i = 1; i <= 13; i++) {
                 const th = document.createElement('th');
                 th.className = "px-1 py-3 text-center w-8 text-[9px] text-slate-400 font-mono border-l border-gray-100";
@@ -290,16 +327,13 @@
                 headerRow.appendChild(th);
             }
 
-            // 2. Tentativo, Antic
-            const cols = ["Tent.", "Antic."];
-            cols.forEach(label => {
+            ["Tent.", "Antic."].forEach(label => {
                 const th = document.createElement('th');
                 th.className = "px-2 py-3 text-center border-l border-gray-100 text-xs";
                 th.innerText = label;
                 headerRow.appendChild(th);
             });
 
-            // 3. NUOVI: Pres. e RIT
             const thPres = document.createElement('th');
             thPres.className = "px-2 py-3 text-center border-l border-gray-100 text-xs bg-emerald-50 text-emerald-700";
             thPres.innerText = "Pres.";
@@ -310,7 +344,6 @@
             thRit.innerText = "RIT";
             headerRow.appendChild(thRit);
 
-            // 4. Inserisce Azioni (sticky right)
             const thActions = document.createElement('th');
             thActions.className = "px-4 py-3 w-20 sticky right-0 bg-white shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.1)]";
             headerRow.appendChild(thActions);
@@ -337,18 +370,19 @@
         }
 
         async function analyzeImage(base64) {
+            if (!apiKey) {
+                checkApiKey();
+                throw new Error("Manca API Key");
+            }
             const prompt = `
-                Sei un sistema di Data Entry automatico.
-                Estrai i dati dall'immagine.
-                
-                CAMPI DA ESTRARRE:
+                Sei un sistema di Data Entry automatico. Estrai i dati dall'immagine.
+                CAMPI:
                 1. "nSeq": Numero sequenziale (sopra il nome, in alto a sx).
                 2. "nome": Nome e Cognome.
                 3. "matricola": Codice matricola.
                 4. "tentativo": Numero tentativo (es. 2).
                 5. "consegnaAnticipata": Booleano.
                 6. "risposte": Oggetto {"D1": val... "D13": val} (0 se bianca, null se illeggibile).
-                
                 Output: JSON valido.
             `;
 
@@ -359,9 +393,7 @@
                         { inlineData: { mimeType: "image/jpeg", data: base64.split(',')[1] } }
                     ]
                 }],
-                generationConfig: { 
-                    responseMimeType: "application/json" 
-                }
+                generationConfig: { responseMimeType: "application/json" }
             };
 
             const data = await fetchWithRetry(
@@ -372,15 +404,12 @@
                     body: JSON.stringify(payload)
                 }
             );
-
-            const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-            return JSON.parse(resultText);
+            return JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text);
         }
 
-        // --- GESTIONE FILE (Scansione) ---
+        // --- GESTIONE FILE ---
         async function handleFiles(files) {
             if (!files.length || isProcessing) return;
-            
             isProcessing = true;
             document.getElementById('statusBar').classList.remove('hidden');
             let processedCount = 0;
@@ -395,29 +424,20 @@
                         reader.onload = () => resolve(reader.result);
                         reader.readAsDataURL(file);
                     });
-                    
                     const data = await analyzeImage(base64);
-                    
                     const newEntry = { 
-                        ...data, 
-                        presente: 1,
-                        ritirato: 0,
-                        fileName: file.name,
-                        risposte: data.risposte || {}
+                        ...data, presente: 1, ritirato: 0, 
+                        fileName: file.name, risposte: data.risposte || {} 
                     };
-
                     upsertStudent(newEntry);
-                    
                     processedCount++;
                     document.getElementById('progressCounter').innerText = `${processedCount}/${total}`;
                     updateTable();
-                    
                 } catch (err) {
                     console.error(err);
-                    showToast(`Errore su ${file.name}`);
+                    showToast(`Errore: ${err.message}`);
                 }
             }
-            
             isProcessing = false;
             document.getElementById('statusBar').classList.add('hidden');
             document.getElementById('fileInput').value = ''; 
@@ -428,61 +448,39 @@
         async function handleCSV(files) {
             if (!files.length) return;
             const file = files[0];
-            
             try {
                 const text = await new Promise((resolve) => {
                     const reader = new FileReader();
                     reader.onload = () => resolve(reader.result);
                     reader.readAsText(file);
                 });
-
                 const lines = text.split(/\r?\n/).filter(line => line.trim() !== "");
-                if (lines.length < 2) throw new Error("File vuoto o invalido");
-
-                // Assuming Semicolon separated from Export
-                const startIndex = 1; // Skip Header
+                if (lines.length < 2) throw new Error("File vuoto");
                 
                 let count = 0;
-                for (let i = startIndex; i < lines.length; i++) {
+                for (let i = 1; i < lines.length; i++) { // Skip header
                     const cols = lines[i].split(';');
-                    if (cols.length < 5) continue; // Basic validation
-
-                    // Mapping based on Export structure: 
-                    // 0:N.Seq, 1:Nome, 2:Matricola, 3-15:D1-D13, 16:Tent, 17:Antic, 18:Pres, 19:Rit
+                    if (cols.length < 5) continue; 
                     
                     const risposteObj = {};
-                    for(let k=1; k<=13; k++) {
-                        const val = cols[2 + k]; // D1 starts at index 3
-                        risposteObj[`D${k}`] = (val && val !== "") ? parseInt(val) : null;
-                    }
-
-                    const nSeq = parseInt(cols[0]) || null;
-                    const nome = cols[1];
-                    const matricola = cols[2];
-                    const tentativo = parseInt(cols[16]) || null;
-                    const anticVal = cols[17]; 
-                    const presVal = cols[18];
-                    const ritVal = cols[19];
+                    for(let k=1; k<=13; k++) risposteObj[`D${k}`] = (cols[2 + k]) ? parseInt(cols[2 + k]) : null;
 
                     const newEntry = {
-                        nSeq: nSeq,
-                        nome: nome,
-                        matricola: matricola,
+                        nSeq: parseInt(cols[0]) || null,
+                        nome: cols[1],
+                        matricola: cols[2],
                         risposte: risposteObj,
-                        tentativo: tentativo,
-                        consegnaAnticipata: (anticVal === "SI"),
-                        presente: (presVal === "1") ? 1 : 0,
-                        ritirato: (ritVal === "1") ? 1 : 0,
+                        tentativo: parseInt(cols[16]) || null,
+                        consegnaAnticipata: (cols[17] === "SI"),
+                        presente: (cols[18] === "1") ? 1 : 0,
+                        ritirato: (cols[19] === "1") ? 1 : 0,
                         fileName: "Importato"
                     };
-
                     upsertStudent(newEntry);
                     count++;
                 }
-
                 updateTable();
-                showToast(`Importati ${count} record da CSV`);
-
+                showToast(`Importati ${count} record`);
             } catch(e) {
                 console.error(e);
                 showToast("Errore lettura CSV");
@@ -490,14 +488,12 @@
             document.getElementById('csvInput').value = '';
         }
 
-        // --- GESTIONE INSERIMENTO MANUALE (Assenti/Ritirati) ---
+        // --- INSERIMENTO MANUALE ---
         function openQuickAdd(type) {
             document.getElementById('quickAddType').value = type;
             document.getElementById('quickSeq').value = '';
             document.getElementById('quickName').value = '';
-            
-            const title = type === 'absent' ? 'Inserisci Assente' : 'Inserisci Ritirato';
-            document.getElementById('quickAddTitle').innerText = title;
+            document.getElementById('quickAddTitle').innerText = type === 'absent' ? 'Inserisci Assente' : 'Inserisci Ritirato';
             document.getElementById('quickAddModal').classList.remove('hidden');
             document.getElementById('quickSeq').focus();
         }
@@ -507,34 +503,22 @@
         }
 
         function saveQuickAdd(keepOpen = false) {
-            const type = document.getElementById('quickAddType').value;
             const seq = document.getElementById('quickSeq').value;
-            const name = document.getElementById('quickName').value;
-
-            if (!seq) {
-                alert("Il numero di sequenza è obbligatorio");
-                return;
-            }
-
+            if (!seq) { alert("Numero sequenza obbligatorio"); return; }
+            const type = document.getElementById('quickAddType').value;
             const isAbsent = type === 'absent';
             
             const newEntry = {
                 nSeq: parseInt(seq),
-                nome: name || (isAbsent ? "ASSENTE" : "RITIRATO"),
-                matricola: "",
-                tentativo: null,
-                consegnaAnticipata: false,
-                risposte: {}, 
-                presente: isAbsent ? 0 : 1,
-                ritirato: isAbsent ? 0 : 1,
+                nome: document.getElementById('quickName').value || (isAbsent ? "ASSENTE" : "RITIRATO"),
+                matricola: "", tentativo: null, consegnaAnticipata: false,
+                risposte: {}, presente: isAbsent ? 0 : 1, ritirato: isAbsent ? 0 : 1,
                 fileName: "Manuale"
             };
-
             for(let i=1; i<=13; i++) newEntry.risposte[`D${i}`] = 0;
 
             upsertStudent(newEntry);
             updateTable();
-            
             if (keepOpen) {
                 document.getElementById('quickSeq').value = '';
                 document.getElementById('quickName').value = '';
@@ -542,7 +526,7 @@
                 showToast("Inserito. Avanti il prossimo!");
             } else {
                 closeQuickAdd();
-                showToast("Studente inserito manualmente");
+                showToast("Inserito");
             }
         }
 
@@ -550,34 +534,18 @@
         function upsertStudent(data) {
             let existingIndex = -1;
             const norm = str => (str || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-
-            // 1. Cerca per Matricola
-            if (data.matricola && data.matricola.length > 3) {
+            if (data.matricola && data.matricola.length > 3) 
                  existingIndex = students.findIndex(s => norm(s.matricola) === norm(data.matricola));
-            }
-            // 2. Cerca per nSeq
-            if (existingIndex === -1 && data.nSeq) {
-                const seqMatchIdx = students.findIndex(s => String(s.nSeq) === String(data.nSeq));
-                if (seqMatchIdx !== -1) {
-                    existingIndex = seqMatchIdx;
-                }
-            }
+            if (existingIndex === -1 && data.nSeq) 
+                existingIndex = students.findIndex(s => String(s.nSeq) === String(data.nSeq));
 
-            const finalData = {
-                ...data,
-                id: existingIndex !== -1 ? students[existingIndex].id : (Date.now() + Math.random())
-            };
-
-            if (existingIndex !== -1) {
-                students[existingIndex] = finalData;
-            } else {
-                students.push(finalData);
-            }
-
+            const finalData = { ...data, id: existingIndex !== -1 ? students[existingIndex].id : (Date.now() + Math.random()) };
+            if (existingIndex !== -1) students[existingIndex] = finalData;
+            else students.push(finalData);
             students.sort((a, b) => (parseInt(a.nSeq) || 9999) - (parseInt(b.nSeq) || 9999));
         }
 
-        // --- UI UPDATES & MODALE ---
+        // --- UI UPDATES ---
         function updateTable() {
             const tbody = document.getElementById('tableBody');
             document.getElementById('studentCount').innerText = `${students.length} Record`;
@@ -589,147 +557,75 @@
             }
 
             tbody.innerHTML = students.map(s => {
-                // Style row based on status
-                let rowBg = "bg-white";
-                let nameColor = "text-slate-800";
-                
-                if (s.presente === 0) {
-                    rowBg = "bg-orange-50/50";
-                    nameColor = "text-orange-800 italic";
-                } else if (s.ritirato === 1) {
-                    rowBg = "bg-purple-50/50";
-                    nameColor = "text-purple-800";
-                }
+                let rowBg = "bg-white", nameColor = "text-slate-800";
+                if (s.presente === 0) { rowBg = "bg-orange-50/50"; nameColor = "text-orange-800 italic"; } 
+                else if (s.ritirato === 1) { rowBg = "bg-purple-50/50"; nameColor = "text-purple-800"; }
 
                 let answerCells = '';
                 for(let i=1; i<=13; i++) {
                     const val = s.risposte[`D${i}`];
-                    let displayVal;
-                    let colorClass = "";
-                    
-                    if (s.presente === 0 || s.ritirato === 1) {
-                         displayVal = '<span class="text-gray-200">-</span>';
-                    } else if (val === 0) {
-                        displayVal = '<span class="text-gray-400 font-mono">0</span>';
-                    } else if (val > 0) {
-                        displayVal = val;
-                        colorClass = 'font-bold text-slate-700 bg-slate-50';
-                    } else {
-                        displayVal = '<span class="text-gray-200">·</span>';
-                    }
+                    let displayVal = (s.presente === 0 || s.ritirato === 1) ? '<span class="text-gray-200">-</span>' : 
+                                    (val === 0) ? '<span class="text-gray-400 font-mono">0</span>' : 
+                                    (val > 0) ? val : '<span class="text-gray-200">·</span>';
+                    let colorClass = (val > 0 && s.presente === 1 && s.ritirato === 0) ? 'font-bold text-slate-700 bg-slate-50' : '';
                     answerCells += `<td class="px-1 py-3 text-center border-l border-gray-50 text-xs ${colorClass}">${displayVal}</td>`;
                 }
-
-                const anticText = s.consegnaAnticipata 
-                    ? `<span class="font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded text-[10px]">SI</span>` 
-                    : `<span class="font-mono text-slate-300 text-xs">0</span>`;
-
-                const presText = s.presente === 1 
-                    ? `<span class="font-bold text-emerald-600">1</span>` 
-                    : `<span class="font-bold text-orange-400">0</span>`;
-                
-                const ritText = s.ritirato === 1 
-                    ? `<span class="font-bold text-rose-600">1</span>` 
-                    : `<span class="font-bold text-slate-300">0</span>`;
 
                 return `
                 <tr class="border-b border-gray-50 hover:brightness-95 transition-all group ${rowBg}">
                     <td class="px-4 py-3 font-mono text-slate-500 text-center text-xs bg-black/5">${s.nSeq || '?'}</td>
-                    
-                    <td class="px-4 py-3">
-                        <div class="font-bold text-sm ${nameColor}">${s.nome || (s.presente === 0 ? 'ASSENTE' : 'Illeggibile')}</div>
-                        <div class="text-[10px] text-gray-400 truncate max-w-[150px]">${s.fileName || ''}</div>
-                    </td>
-                    
-                    <td class="px-4 py-3 text-center font-mono text-xs text-blue-600 font-medium">
-                        ${s.matricola || '<span class="text-gray-300">-</span>'}
-                    </td>
-                    
+                    <td class="px-4 py-3"><div class="font-bold text-sm ${nameColor}">${s.nome || (s.presente === 0 ? 'ASSENTE' : 'Illeggibile')}</div><div class="text-[10px] text-gray-400 truncate max-w-[150px]">${s.fileName || ''}</div></td>
+                    <td class="px-4 py-3 text-center font-mono text-xs text-blue-600 font-medium">${s.matricola || '<span class="text-gray-300">-</span>'}</td>
                     ${answerCells}
-
-                    <td class="px-4 py-3 text-center font-mono text-xs border-l border-gray-50">
-                        ${s.tentativo ? `<span class="bg-gray-100 px-2 py-1 rounded text-gray-700 font-bold">${s.tentativo}</span>` : '-'}
-                    </td>
-                    <td class="px-4 py-3 text-center">
-                        ${anticText}
-                    </td>
-
-                    <!-- PRESENTE Column -->
-                    <td class="px-4 py-3 text-center border-l border-emerald-50 bg-emerald-50/30">
-                        ${presText}
-                    </td>
-                    <!-- RITIRATO Column -->
-                    <td class="px-4 py-3 text-center border-l border-rose-50 bg-rose-50/30">
-                        ${ritText}
-                    </td>
-                    
+                    <td class="px-4 py-3 text-center font-mono text-xs border-l border-gray-50">${s.tentativo ? `<span class="bg-gray-100 px-2 py-1 rounded text-gray-700 font-bold">${s.tentativo}</span>` : '-'}</td>
+                    <td class="px-4 py-3 text-center">${s.consegnaAnticipata ? `<span class="font-bold text-purple-600 bg-purple-50 px-2 py-1 rounded text-[10px]">SI</span>` : `<span class="font-mono text-slate-300 text-xs">0</span>`}</td>
+                    <td class="px-4 py-3 text-center border-l border-emerald-50 bg-emerald-50/30">${s.presente === 1 ? `<span class="font-bold text-emerald-600">1</span>` : `<span class="font-bold text-orange-400">0</span>`}</td>
+                    <td class="px-4 py-3 text-center border-l border-rose-50 bg-rose-50/30">${s.ritirato === 1 ? `<span class="font-bold text-rose-600">1</span>` : `<span class="font-bold text-slate-300">0</span>`}</td>
                     <td class="px-2 py-3 text-center sticky right-0 ${rowBg} shadow-[-4px_0_8px_-4px_rgba(0,0,0,0.05)]">
                         <div class="flex items-center justify-center gap-1">
-                            <button onclick="editStudent(${s.id})" class="text-gray-400 hover:text-blue-500 p-1.5 rounded-lg hover:bg-blue-50 transition-all">
-                                <i data-lucide="pencil" width="16"></i>
-                            </button>
-                            <button onclick="removeStudent(${s.id})" class="text-gray-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition-all">
-                                <i data-lucide="trash-2" width="16"></i>
-                            </button>
+                            <button onclick="editStudent(${s.id})" class="text-gray-400 hover:text-blue-500 p-1.5 rounded-lg hover:bg-blue-50 transition-all"><i data-lucide="pencil" width="16"></i></button>
+                            <button onclick="removeStudent(${s.id})" class="text-gray-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition-all"><i data-lucide="trash-2" width="16"></i></button>
                         </div>
                     </td>
-                </tr>
-                `;
+                </tr>`;
             }).join('');
-            
             lucide.createIcons();
         }
 
-        // --- EDIT MODAL ---
+        // --- EDITING & UTILS ---
         function editStudent(id) {
-            const student = students.find(s => s.id === id);
-            if (!student) return;
+            const s = students.find(s => s.id === id);
+            if (!s) return;
+            document.getElementById('editId').value = s.id;
+            document.getElementById('editSeq').value = s.nSeq || '';
+            document.getElementById('editNome').value = s.nome || '';
+            document.getElementById('editMatricola').value = s.matricola || '';
+            document.getElementById('editTentativo').value = s.tentativo || '';
+            document.getElementById('editAntic').checked = !!s.consegnaAnticipata;
+            document.getElementById('editPresente').checked = s.presente === 1;
+            document.getElementById('editRitirato').checked = s.ritirato === 1;
 
-            document.getElementById('editId').value = student.id;
-            document.getElementById('editSeq').value = student.nSeq || '';
-            document.getElementById('editNome').value = student.nome || '';
-            document.getElementById('editMatricola').value = student.matricola || '';
-            document.getElementById('editTentativo').value = student.tentativo || '';
-            
-            document.getElementById('editAntic').checked = !!student.consegnaAnticipata;
-            document.getElementById('editPresente').checked = student.presente === 1;
-            document.getElementById('editRitirato').checked = student.ritirato === 1;
-
-            const answersGrid = document.getElementById('editAnswersGrid');
-            answersGrid.innerHTML = '';
+            const grid = document.getElementById('editAnswersGrid');
+            grid.innerHTML = '';
             for (let i = 1; i <= 13; i++) {
-                const val = student.risposte[`D${i}`];
-                const displayVal = (val === null || val === undefined) ? '' : val;
-                
-                const div = document.createElement('div');
-                div.innerHTML = `
-                    <label class="block text-[10px] text-gray-400 text-center font-mono">D${i}</label>
-                    <input type="number" min="0" max="6" value="${displayVal}" id="edit_D${i}"
-                        class="w-full text-center border rounded p-1 font-bold text-slate-700 focus:ring-2 focus:ring-blue-500 outline-none">
-                `;
-                answersGrid.appendChild(div);
+                grid.innerHTML += `<div><label class="block text-[10px] text-gray-400 text-center font-mono">D${i}</label>
+                    <input type="number" min="0" max="6" value="${(s.risposte[`D${i}`] === null) ? '' : s.risposte[`D${i}`]}" id="edit_D${i}"
+                        class="w-full text-center border rounded p-1 font-bold text-slate-700 outline-none"></div>`;
             }
-
             document.getElementById('editModal').classList.remove('hidden');
         }
 
-        function closeEditModal() {
-            document.getElementById('editModal').classList.add('hidden');
-        }
+        function closeEditModal() { document.getElementById('editModal').classList.add('hidden'); }
 
         function saveStudent() {
-            const id = parseFloat(document.getElementById('editId').value);
-            const idx = students.findIndex(s => s.id === id);
+            const idx = students.findIndex(s => s.id === parseFloat(document.getElementById('editId').value));
             if (idx === -1) return;
-
             const updatedAnswers = {};
             for (let i = 1; i <= 13; i++) {
-                const val = document.getElementById(`edit_D${i}`).value;
-                updatedAnswers[`D${i}`] = val === '' ? null : parseInt(val);
+                const v = document.getElementById(`edit_D${i}`).value;
+                updatedAnswers[`D${i}`] = v === '' ? null : parseInt(v);
             }
-
-            students[idx] = {
-                ...students[idx],
+            students[idx] = { ...students[idx],
                 nSeq: document.getElementById('editSeq').value,
                 nome: document.getElementById('editNome').value,
                 matricola: document.getElementById('editMatricola').value,
@@ -739,14 +635,10 @@
                 ritirato: document.getElementById('editRitirato').checked ? 1 : 0,
                 risposte: updatedAnswers
             };
-
             students.sort((a, b) => (parseInt(a.nSeq) || 9999) - (parseInt(b.nSeq) || 9999));
-            updateTable();
-            closeEditModal();
-            showToast("Modifiche salvate");
+            updateTable(); closeEditModal(); showToast("Modifiche salvate");
         }
 
-        // --- UTILS (Delete, Toast, Export) ---
         function showConfirmModal(action, title, message) {
             pendingDeleteAction = action;
             document.getElementById('modalTitle').innerText = title;
@@ -754,86 +646,26 @@
             document.getElementById('deleteModal').classList.remove('hidden');
             lucide.createIcons();
         }
-
-        function closeDeleteModal() {
-            pendingDeleteAction = null;
-            document.getElementById('deleteModal').classList.add('hidden');
-        }
-
-        function executeDelete() {
-            if (pendingDeleteAction) pendingDeleteAction();
-            closeDeleteModal();
-        }
-
-        function removeStudent(id) {
-            showConfirmModal(
-                () => {
-                    students = students.filter(s => s.id !== id);
-                    updateTable();
-                    showToast("Studente eliminato");
-                },
-                "Eliminare record?",
-                "Sei sicuro di voler rimuovere questo record dalla lista?"
-            );
-        }
-
-        function clearAll() {
-            if (students.length === 0) return;
-            showConfirmModal(
-                () => {
-                    students = [];
-                    updateTable();
-                    showToast("Tutti i dati cancellati");
-                },
-                "Svuotare tutto?",
-                "Tutti i dati acquisiti verranno persi irrimediabilmente."
-            );
-        }
-
-        function showToast(text) {
-            const box = document.getElementById('messageBox');
-            const msg = document.getElementById('messageText');
-            msg.innerText = text;
-            box.classList.remove('hidden');
-            setTimeout(() => box.classList.add('hidden'), 3000);
-        }
-
+        function closeDeleteModal() { document.getElementById('deleteModal').classList.add('hidden'); }
+        function executeDelete() { if (pendingDeleteAction) pendingDeleteAction(); closeDeleteModal(); }
+        function removeStudent(id) { showConfirmModal(() => { students = students.filter(s => s.id !== id); updateTable(); showToast("Eliminato"); }, "Eliminare?", "Sicuro?"); }
+        function clearAll() { if(students.length) showConfirmModal(() => { students = []; updateTable(); showToast("Cancellato tutto"); }, "Svuotare?", "Tutto perso."); }
+        function showToast(text) { const b=document.getElementById('messageBox'), m=document.getElementById('messageText'); m.innerText=text; b.classList.remove('hidden'); setTimeout(()=>b.classList.add('hidden'),3000); }
+        
         function exportCSV() {
-            if (students.length === 0) return;
-
-            // Header CSV: Seq, Nome, Matr, D1-D13, Tent, Antic, Pres, RIT
-            const header = [
-                "N.Seq", "Nome", "Matricola", 
-                ...Array.from({length:13},(_,i)=>`D${i+1}`), 
-                "Tentativo", "Consegna Anticipata", "Presente", "Ritirato"
-            ].join(";");
-            
+            if (!students.length) return;
+            const header = ["N.Seq", "Nome", "Matricola", ...Array.from({length:13},(_,i)=>`D${i+1}`), "Tentativo", "Consegna Anticipata", "Presente", "Ritirato"].join(";");
             const rows = students.map(s => [
-                s.nSeq || "",
-                s.nome || "Sconosciuto",
-                s.matricola || "",
-                ...Array.from({length:13},(_,i)=> {
-                    const r = s.risposte[`D${i+1}`];
-                    if (r === 0) return "0";
-                    return (r === null || r === undefined) ? "" : r;
-                }),
-                s.tentativo || "",
-                s.consegnaAnticipata ? "SI" : "0",
-                s.presente, // 1 o 0
-                s.ritirato  // 1 o 0
+                s.nSeq || "", s.nome || "", s.matricola || "",
+                ...Array.from({length:13},(_,i)=> (s.risposte[`D${i+1}`] === 0 ? "0" : (s.risposte[`D${i+1}`] || ""))),
+                s.tentativo || "", s.consegnaAnticipata ? "SI" : "0", s.presente, s.ritirato
             ].join(";"));
-            
-            const csvContent = "\uFEFF" + [header, ...rows].join("\n");
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            
+            const blob = new Blob(["\uFEFF" + [header, ...rows].join("\n")], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
-            link.setAttribute("href", url);
-            link.setAttribute("download", `Dati_Esame_${new Date().toISOString().slice(0,10)}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            showToast("File CSV generato!");
+            link.href = URL.createObjectURL(blob);
+            link.download = `Dati_Esame_${new Date().toISOString().slice(0,10)}.csv`;
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+            showToast("CSV generato!");
         }
     </script>
 </body>
