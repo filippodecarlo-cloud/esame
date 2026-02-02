@@ -56,19 +56,31 @@
         <!-- Dashboard View -->
         <div id="view-dashboard" class="space-y-4 fade-in">
             <!-- Action Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-4xl mx-auto">
-                <!-- Scansione -->
-                <button onclick="document.getElementById('fileInput').click()" class="card p-4 flex flex-col items-center justify-center gap-2 hover:border-blue-400 active:bg-blue-50 transition-all btn-active group cursor-pointer border-dashed border-2 h-full">
-                    <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center group-hover:bg-blue-100 transition-colors">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 max-w-5xl mx-auto">
+                
+                <!-- 1. FOTOCAMERA -->
+                <button onclick="document.getElementById('cameraInput').click()" class="card p-4 flex flex-col items-center justify-center gap-2 hover:border-blue-400 active:bg-blue-50 transition-all btn-active group cursor-pointer border-dashed border-2 h-full">
+                    <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors">
                         <i data-lucide="camera" width="24"></i>
                     </div>
                     <div class="text-center">
-                        <span class="block font-bold text-base text-slate-700">Nuova Scansione</span>
-                        <span class="text-[10px] text-slate-400 font-medium uppercase">Carica foto</span>
+                        <span class="block font-bold text-base text-slate-700">Fotocamera</span>
+                        <span class="text-[10px] text-slate-400 font-medium uppercase">Scatta ora</span>
+                    </div>
+                </button>
+
+                <!-- 2. GALLERIA -->
+                <button onclick="document.getElementById('fileInput').click()" class="card p-4 flex flex-col items-center justify-center gap-2 hover:border-indigo-400 active:bg-indigo-50 transition-all btn-active group cursor-pointer border-dashed border-2 h-full">
+                    <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center group-hover:bg-indigo-100 transition-colors">
+                        <i data-lucide="images" width="24"></i>
+                    </div>
+                    <div class="text-center">
+                        <span class="block font-bold text-base text-slate-700">Galleria</span>
+                        <span class="text-[10px] text-slate-400 font-medium uppercase">Carica file</span>
                     </div>
                 </button>
                 
-                <!-- Pulsanti Rapidi -->
+                <!-- 3. ASSENTE -->
                 <button onclick="openQuickAdd('absent')" class="card p-4 flex flex-col items-center justify-center gap-2 hover:bg-orange-50 hover:border-orange-200 transition-colors btn-active h-full">
                     <div class="w-12 h-12 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center">
                         <i data-lucide="user-x" width="24"></i>
@@ -79,6 +91,7 @@
                     </div>
                 </button>
 
+                <!-- 4. RITIRATO -->
                 <button onclick="openQuickAdd('withdrawn')" class="card p-4 flex flex-col items-center justify-center gap-2 hover:bg-purple-50 hover:border-purple-200 transition-colors btn-active h-full">
                     <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center">
                         <i data-lucide="log-out" width="24"></i>
@@ -91,12 +104,14 @@
             </div>
 
             <!-- Stats Bar -->
-            <div class="max-w-4xl mx-auto flex justify-between items-center px-2">
+            <div class="max-w-5xl mx-auto flex justify-between items-center px-2">
                  <span id="studentCount" class="font-bold text-slate-700 text-sm">0 Record</span>
             </div>
 
-            <!-- Inputs Nascosti -->
+            <!-- INPUTS NASCOSTI -->
+            <!-- RIPRISTINATO accept="image/*" per compatibilità Android Gallery -->
             <input type="file" id="fileInput" multiple accept="image/*" class="hidden" onchange="handleFiles(this.files)">
+            <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden" onchange="handleFiles(this.files)">
             <input type="file" id="csvInput" accept=".csv" class="hidden" onchange="handleCSV(this.files)">
 
             <!-- Status & Progress -->
@@ -278,7 +293,7 @@
     <!-- LOGICA APP -->
     <script>
         // --- CONFIGURAZIONE ---
-        // NESSUNA API KEY QUI! Viene gestita via LocalStorage
+        // Chiave API vuota per sicurezza (richiesta tramite modale)
         let apiKey = localStorage.getItem('gemini_api_key') || "";
         const MODEL_NAME = "gemini-2.5-flash-preview-09-2025";
         
@@ -363,29 +378,19 @@
                     const response = await fetch(url, options);
                     if (response.ok) return await response.json();
                     
-                    // Se errore 429 (troppe richieste) o 5xx (server error), riprova
                     if (response.status === 429 || response.status >= 500) {
-                        // Se è l'ultimo tentativo, lancia l'errore e NON continuare
-                        if (i === retries - 1) {
-                            throw new Error(`HTTP Error (Last Attempt): ${response.status}`);
-                        }
-                        
                         const delay = Math.pow(2, i) * 1000;
-                        console.warn(`Retry ${i+1}/${retries} after ${delay}ms due to status ${response.status}`);
                         await new Promise(r => setTimeout(r, delay));
                         continue;
                     }
-                    
-                    // Altri errori (es. 400 Bad Request, API key invalida) -> Errore immediato
                     throw new Error(`HTTP Error: ${response.status}`);
-                    
                 } catch (err) {
                     if (i === retries - 1) throw err;
                     const delay = Math.pow(2, i) * 1000;
                     await new Promise(r => setTimeout(r, delay));
                 }
             }
-            throw new Error("Tutti i tentativi falliti senza risposta."); // Fallback finale
+            throw new Error("Tutti i tentativi falliti senza risposta.");
         }
 
         async function analyzeImage(base64) {
@@ -427,11 +432,10 @@
                 );
             } catch (e) {
                 console.error("Fetch failed", e);
-                // Propaga l'errore per mostrarlo nel toast
                 throw e; 
             }
 
-            if (!data) throw new Error("Nessuna risposta dall'API (Data is null)");
+            if (!data) throw new Error("Nessuna risposta dall'API");
             
             if (data.error) {
                 throw new Error(`Errore API: ${data.error.message || JSON.stringify(data.error)}`);
@@ -445,15 +449,11 @@
             }
 
             const text = data.candidates[0].content?.parts?.[0]?.text;
-            if (!text) throw new Error("Risposta vuota dall'IA");
-
-            const cleanText = text.replace(/```json/g, '').replace(/```/g, '').trim();
-
             try {
-                return JSON.parse(cleanText);
+                return JSON.parse(text.replace(/```json/g, '').replace(/```/g, '').trim());
             } catch (e) {
                 console.error("JSON Parse Error", text);
-                throw new Error("Formato JSON non valido ricevuto dall'IA");
+                throw new Error("Formato JSON non valido");
             }
         }
 
@@ -484,13 +484,14 @@
                     document.getElementById('progressCounter').innerText = `${processedCount}/${total}`;
                     updateTable();
                 } catch (err) {
-                    console.error("Errore analisi file:", file.name, err);
+                    console.error("Errore file:", err);
                     showToast(`Errore su ${file.name}: ${err.message}`);
                 }
             }
             isProcessing = false;
             document.getElementById('statusBar').classList.add('hidden');
             document.getElementById('fileInput').value = ''; 
+            document.getElementById('cameraInput').value = ''; 
             showToast("Importazione completata!");
         }
 
@@ -508,7 +509,7 @@
                 if (lines.length < 2) throw new Error("File vuoto");
                 
                 let count = 0;
-                for (let i = 1; i < lines.length; i++) { // Skip header
+                for (let i = 1; i < lines.length; i++) { 
                     const cols = lines[i].split(';');
                     if (cols.length < 5) continue; 
                     
@@ -521,7 +522,7 @@
                         matricola: cols[2],
                         risposte: risposteObj,
                         tentativo: parseInt(cols[16]) || null,
-                        consegnaAnticipata: (cols[17] === "SI" || cols[17] === "1"),
+                        consegnaAnticipata: (cols[17] === "1" || cols[17] === "SI"),
                         presente: (cols[18] === "1") ? 1 : 0,
                         ritirato: (cols[19] === "1") ? 1 : 0,
                         fileName: "Importato"
